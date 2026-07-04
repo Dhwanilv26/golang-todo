@@ -33,10 +33,11 @@ func main() {
 	router.SetTrustedProxies(nil)
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "todo api is running",
-			"status":  "success",
+			"message":  "todo api is running",
+			"status":   "success",
+			"database": "connected",
 		})
 	})
 
-	router.Run(":3000")
+	router.Run(":" + cfg.Port)
 }
