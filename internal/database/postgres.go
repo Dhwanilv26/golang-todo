@@ -22,6 +22,7 @@ func Connect(databaseUrl string) (*pgxpool.Pool, error) {
 	var pool *pgxpool.Pool
 	pool, err = pgxpool.NewWithConfig(ctx, config)
 
+
 	if err != nil {
 		log.Printf("unable to create connection pool: %v", err)
 		return nil, err
