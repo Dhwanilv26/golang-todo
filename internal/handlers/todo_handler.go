@@ -18,6 +18,7 @@ type CreateTodoInput struct {
 type UpdateTodoInput struct {
 	Title     *string `json:"title"`
 	Completed *bool   `json:"completed"`
+	// we need pointers here, to differentiate b/w if the user has provided this value, or it is the value from the db via "nill"
 }
 
 func CreateTodoHandler(pool *pgxpool.Pool) gin.HandlerFunc {
@@ -97,7 +98,7 @@ func UpdateTodoHandler(pool *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		if input.Title == nil && input.Completed == nil {
+		if input.Title == nil && input.Completed == nil { // here, we are referencing the actual pointer
 			c.JSON(http.StatusBadRequest, gin.H{"error": "At least one field (title or completed) must be provided"})
 			return
 		}
@@ -116,7 +117,7 @@ func UpdateTodoHandler(pool *pgxpool.Pool) gin.HandlerFunc {
 
 		title := existingTodo.Title
 		if input.Title != nil {
-			title = *input.Title
+			title = *input.Title // and here, the value of the pointer variable
 		}
 
 		completed := existingTodo.Completed
@@ -128,11 +129,6 @@ func UpdateTodoHandler(pool *pgxpool.Pool) gin.HandlerFunc {
 		todo, err := repository.UpdateTodo(pool, title, completed, id)
 
 		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "todo not found"})
-				return
-			}
-
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}
