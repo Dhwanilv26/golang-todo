@@ -9,7 +9,6 @@ import (
 	"todo-api/internal/repository"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
@@ -83,12 +82,14 @@ func LoginHandler(pool *pgxpool.Pool, cfg *config.Config) gin.HandlerFunc {
 
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+			return
 		}
 		// just compare the db hashed password, and frontend password by hashing the passowrd with the same salt used in the db password
 		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password))
 
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+			return
 		}
 
 		claims := jwt.MapClaims{
@@ -99,12 +100,31 @@ func LoginHandler(pool *pgxpool.Pool, cfg *config.Config) gin.HandlerFunc {
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
+		// token has header, payload, and cryptographic proof of correct token
+
 		tokenString, err := token.SignedString([]byte(cfg.JWTSecret))
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate jwt token : " + err.Error()})
+			return
 		}
 
 		c.JSON(http.StatusOK, LoginResponse{Token: tokenString})
+	}
+}
+
+func TestProtectedHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userId, exists := c.Get("user_id")
+
+		if !exists {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "user_id not found in context"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "protected route accessed succesfully",
+			"user_id": userId,
+		})
 	}
 }
